@@ -1,0 +1,87 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============== [1. User 모델 정의] ==============
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  username  String
+  password  String?  // '?'는 선택적 필드를 의미합니다.
+
+  // --- 관계 설정 ---
+  // 한 명의 유저는 여러 개의 Post를 가질 수 있습니다.
+  posts     Post[]
+  likes     Like[] // [추가] 이 유저가 누른 '좋아요' 목록
+  comments  Comment[] // [추가] 이 유저가 작성한 댓글 목록
+
+  // --- [수정] 팔로우 관계 필드 추가 ---
+  // 내가 팔로우하는 관계 목록 (내가 'follower'인 경우) 내가 상대방을 팔로우함 
+  following   Follows[] @relation("UserIsFollower")
+  // 나를 팔로우하는 관계 목록 (내가 'followed'인 경우) 상대방이 나를
+  followers   Follows[] @relation("UserIsFollowed")
+}
+
+// ============== [Follows 모델 새로 추가] ==============
+model Follows {
+// 팔로우를 '하는' 사람 (팔로잉)
+  followerId  Int
+  follower    User @relation(name: "UserIsFollower", fields: [followerId], references: [id])
+
+  // 팔로우를 '당하는' 사람 (팔로워)
+  followedId  Int
+  followed    User @relation(name: "UserIsFollowed", fields: [followedId], references: [id])
+
+  // 복합 기본 키
+  @@id([followerId, followedId])
+}
+
+// ============== [2. Post 모델 정의] ==============
+model Post {
+  id        Int      @id @default(autoincrement())
+  imageUrl  String
+  caption   String
+
+  // --- 관계 설정 ---
+  // 이 Post는 한 명의 User(author)에게 속해있습니다.
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  Int      // 실제 데이터베이스에 저장될 작성자의 ID
+  likes     Like[] // [추가] 이 게시물이 받은 '좋아요' 목록
+  comments  Comment[] // [추가] 이 게시물에 달린 댓글 목록
+}
+
+// ============== [Like 모델 새로 추가] ==============
+model Like {
+  id     Int @id @default(autoincrement())
+  post   Post @relation(fields: [postId], references: [id])
+  postId Int
+  user   User @relation(fields: [userId], references: [id])
+  userId Int
+
+  @@unique([postId, userId]) // 👈 이 한 줄을 추가하세요!
+}
+
+// ============== [Comment 모델 새로 추가] ==============
+model Comment {
+  id        Int      @id @default(autoincrement())
+  text      String   // 댓글의 실제 내용
+
+  // --- 관계 설정 ---
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  Int      // 댓글 작성자
+
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    Int      // 댓글이 달린 게시물
+
+  // --- 타임스탬프 ---
+  createdAt DateTime @default(now()) // 생성 시각 (자동 생성)
+  updatedAt DateTime @updatedAt    // 마지막 수정 시각 (자동 업데이트)
+}

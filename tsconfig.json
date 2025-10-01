@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "es6",                     // 어떤 버전의 자바스크립트로 변환할지
+    "module": "commonjs",                // 모듈 시스템은 무엇을 사용할지
+    "outDir": "./dist",                  // 변환된 자바스크립트 파일이 저장될 폴더
+    "rootDir": "./src",                  // 타입스크립트 소스 코드의 루트 폴더
+    "strict": true,                      // 모든 엄격한 타입 체크 활성화 (강력 추천!)
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  }
+}
