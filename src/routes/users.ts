@@ -40,7 +40,19 @@ router.get('/:id', async (req: Request, res: Response) => { // async 추가
         posts: { // 👈 이 사용자가 작성한 'posts'를 포함시킵니다.
           orderBy: {
             createdAt: 'desc' // 게시물은 최신순으로 정렬
+          },
+          // 👇 이 중첩 include가 필요합니다! post 안의 관계들
+          include: {
+            author: true,
+            likes: true,
+            comments: true,
           }
+        }, 
+        // 👇 '나를 팔로우하는 관계' 목록을 포함시킵니다.
+        followers: {
+        select: {
+          followerId: true // 전체 정보 대신, 팔로워의 ID만 선택해서 가져옵니다.
+        }
         }
       }
     });
