@@ -33,18 +33,29 @@ router.get('/', async (req: Request, res: Response) => { // 'async' 추가!
 router.get('/:id', async (req: Request, res: Response) => { // async 추가
   const userId = parseInt(req.params.id, 10);
 
-  const user = await prisma.user.findUnique({
-    where: { // '어떤 조건으로' 찾을지 명시
-      id: userId,
-    },
-  });
+  try {
+    const userWithPosts = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        posts: { // 👈 이 사용자가 작성한 'posts'를 포함시킵니다.
+          orderBy: {
+            createdAt: 'desc' // 게시물은 최신순으로 정렬
+          }
+        }
+      }
+    });
 
-  // Prisma는 데이터를 못찾으면 null을 반환합니다.
-  if (!user) {
-    return res.status(404).json({ message: 'User not found' });
+    if (!userWithPosts) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // (보안) 응답 데이터에서 password 필드는 제거하고 보냅니다.
+    const { password, ...userWithoutPassword } = userWithPosts;
+    res.status(200).json(userWithoutPassword);
+
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching user profile' });
   }
-
-  res.status(200).json(user);
 });
 
 // [C] Create User
