@@ -78,6 +78,7 @@ router.post('/', async (req: Request, res: Response) => { // 1. async 추가
 
   } catch (error) {
     // email @unique 제약조건 위반 시 등
+    console.error(error);
     res.status(500).json({ message: 'Error creating user' });
   }
 });

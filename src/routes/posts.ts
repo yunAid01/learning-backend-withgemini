@@ -10,10 +10,13 @@ const router = Router();
 // [C] Create Post
 // [C] Create Post (이제 인증 필요!)
 router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
+   console.log("✅ BACKEND CCTV: /posts POST 요청이 API 핸들러에 도착했습니다!"); // 👈 백엔드 CCTV 설치
   // 1. 이제 body에서는 게시물 내용만 받습니다.
   const { imageUrl, caption } = req.body;
   // 2. '누가' 썼는지는, 보안 요원이 검증해준 req.user에서 가져옵니다. (훨씬 안전!)
   const authorId = req.user?.id;
+  
+  console.log(imageUrl, caption, authorId);
 
   if (!imageUrl || !caption) {
     return res.status(400).json({ message: 'Image URL and caption are required' });
@@ -36,6 +39,7 @@ router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
     });
     res.status(201).json(newPost);
   } catch (error) {
+    console.error("backend catch block err:", error);
     res.status(500).json({ message: 'Error creating post' });
   }
 });
@@ -46,19 +50,30 @@ router.get('/', async (req: Request, res: Response) => {
     // 👇 이 'include' 옵션을 추가합니다!
     include: {
       likes: true, // 'Post' 모델에 정의된 'likes' 관계를 포함시켜라!
+      author: true, // 👈 작성자 정보를 함께 불러옵니다!
     },
+    // 💡 꿀팁: 최신 글이 위로 오도록 생성 시간(createdAt) 기준으로 내림차순 정렬!
+    orderBy: {
+      createdAt: 'desc',  
+    }
   });
   res.status(200).json(allPosts); // 204가 아닌 200 OK
 });
 
 // [R] Read One Post by ID
 router.get('/:id', async (req: Request, res: Response) => {
+  console.log("🔥🔥🔥 최신 버전의 GET /posts/:id API가 실행되었습니다! 🔥🔥🔥");
+
   const postId = parseInt(req.params.id, 10);
   const getOnePost = await prisma.post.findUnique({
     where: { id: postId },
-    include: { likes: true, author : true }
+    include: { likes: true, author : true, comments : { // 👈 이 부분이 아마 누락되었을 겁니다!
+        include: {
+          author: true
+        }
+      },
+  }
   });
-
   if (!getOnePost) {
     return res.status(404).json({ message: 'Post not found' });
   }
@@ -241,6 +256,5 @@ router.get('/:id/comments', async (req: Request, res: Response) => {
 //     return res.status(404).json({ message : "post is not found"})
 //   }
 // });
-
 
 export default router;

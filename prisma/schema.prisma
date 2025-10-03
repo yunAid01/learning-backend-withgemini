@@ -56,6 +56,10 @@ model Post {
   authorId  Int      // 실제 데이터베이스에 저장될 작성자의 ID
   likes     Like[] // [추가] 이 게시물이 받은 '좋아요' 목록
   comments  Comment[] // [추가] 이 게시물에 달린 댓글 목록
+
+  // 👇 이 두 줄을 추가합니다!
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 // ============== [Like 모델 새로 추가] ==============

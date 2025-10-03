@@ -4,9 +4,13 @@ import userRoutes from './routes/users';
 import postRoutes from './routes/posts';
 import authRoutes from './routes/auth'; // 1. '인증 부서' import
 
-const app = express();
-const PORT = 3000;
+import cors from 'cors'; // 1. cors import
+// ... (다른 import들)
 
+const app = express();
+const PORT = 3001;
+
+app.use(cors()); // 2. app.use(express.json()) 바로 위나 아래에 추가
 app.use(express.json());
 
 // 안내 데스크의 역할:
