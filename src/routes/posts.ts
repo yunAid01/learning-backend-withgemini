@@ -147,23 +147,14 @@ router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response) =>
   }
 });
 
-// [C] Create a Like for a Post
-router.post('/:id/like', async (req: Request, res: Response) => {
-  // 1. URL로부터 어떤 게시물에 '좋아요'를 누를지 알아냅니다. (postId)
+// src/routes/posts.ts
+
+// [C] Create a Like for a Post (보안 강화 버전)
+router.post('/:id/like', authMiddleware, async (req: AuthRequest, res: Response) => {
   const postId = parseInt(req.params.id, 10);
-  
-  // 2. Body로부터 누가 '좋아요'를 누르는지 알아냅니다. (userId)
-  const { userId } = req.body;
-
-  // 💡(미래를 위한 팁) 실제 앱에서는 로그인된 사용자의 ID를 사용하므로 body로 받지 않습니다.
-  // 지금은 인증 기능이 없으니, 클라이언트가 직접 userId를 보내주는 방식으로 진행합니다.
-
-  if (!userId) {
-    return res.status(400).json({ message: 'User ID is required' });
-  }
+  const userId = req.user!.id; // Body가 아닌, 검증된 사용자 정보를 사용합니다.
 
   try {
-    // 3. Like 테이블에 postId와 userId를 가진 새로운 데이터를 생성합니다.
     const newLike = await prisma.like.create({
       data: {
         postId: postId,
@@ -172,26 +163,18 @@ router.post('/:id/like', async (req: Request, res: Response) => {
     });
     res.status(201).json(newLike);
   } catch (error) {
-    // 예를 들어, 존재하지 않는 postId나 userId로 요청하면 Prisma가 에러를 발생시킵니다.
-    res.status(500).json({ message: 'Could not process the like action.' });
+    res.status(400).json({ message: 'Could not process the like action.' });
   }
 });
 
-// [D] Delete a Like for a Post ('Unlike')
-router.delete('/:id/like', async (req: Request, res: Response) => {
+// [D] Delete a Like for a Post ('Unlike') (보안 강화 버전)
+router.delete('/:id/like', authMiddleware, async (req: AuthRequest, res: Response) => {
   const postId = parseInt(req.params.id, 10);
-  const { userId } = req.body;
-
-  if (!userId) {
-    return res.status(400).json({ message: 'User ID is required' });
-  }
+  const userId = req.user!.id; // Body가 아닌, 검증된 사용자 정보를 사용합니다.
 
   try {
-    // postId와 userId의 조합으로 특정 Like를 삭제
     await prisma.like.delete({
       where: {
-        // Prisma는 @@unique([postId, userId]) 규칙을 보고,
-        // postId_userId 라는 특별한 식별자를 자동으로 만들어줍니다.
         postId_userId: {
           postId: postId,
           userId: userId,
@@ -200,8 +183,7 @@ router.delete('/:id/like', async (req: Request, res: Response) => {
     });
     res.status(200).json({ message: 'Like removed successfully' });
   } catch (error) {
-    // 지울 좋아요가 없는 경우 등 Prisma가 에러를 발생시킴
-    res.status(404).json({ message: 'Like not found or could not be removed' });
+    res.status(404).json({ message: 'Like not found.' });
   }
 });
 
@@ -256,5 +238,31 @@ router.get('/:id/comments', async (req: Request, res: Response) => {
 //     return res.status(404).json({ message : "post is not found"})
 //   }
 // });
+
+// src/routes/posts.ts - POST /:id/comments
+
+router.post('/:id/comments', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const postId = parseInt(req.params.id, 10);
+  const { text } = req.body;
+  const authorId = req.user!.id; // 👈 이제 Body가 아닌 토큰에서 가져옵니다.
+
+  // ... (유효성 검사) ...
+  try {
+    const newComment = await prisma.comment.create({
+      data: {
+        text,
+        author: { connect: { id: authorId } },
+        post: { connect: { id: postId } }
+      },
+      // 👇 생성된 댓글의 작성자 정보도 함께 반환하도록 include 추가
+      include: {
+        author: true
+      }
+    });
+    res.status(201).json(newComment);
+  } catch (error) {
+    res.status(500).json({ message: 'Could not create comment' });
+  }
+})
 
 export default router;

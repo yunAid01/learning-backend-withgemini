@@ -3,6 +3,7 @@ import express from 'express';
 import userRoutes from './routes/users';
 import postRoutes from './routes/posts';
 import authRoutes from './routes/auth'; // 1. '인증 부서' import
+import commentRoutes from './routes/comments'; // 1. 댓글 라우터 import
 
 import cors from 'cors'; // 1. cors import
 // ... (다른 import들)
@@ -24,6 +25,10 @@ app.use('/posts', postRoutes);
 
 // 3. '/auth' 경로로 오는 요청은 '인증 부서'로
 app.use('/auth', authRoutes); 
+
+// 2. '/comments' 경로로 오는 요청은 '댓글 부서'로
+app.use('/comments', commentRoutes);
+
 
 app.get('/', (req, res) => {
   res.send('Welcome to the Main Lobby!');
